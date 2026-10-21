@@ -1,0 +1,347 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#080810">
+
+    <title>Administração | Montery Vinil</title>
+
+    <link rel="stylesheet" href="admin.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="admin.js" defer></script>
+</head>
+
+<body>
+
+    <div class="admin-layout">
+
+        <!-- BARRA LATERAL -->
+        <aside class="sidebar">
+            <a href="index.html" class="brand">
+                <img src="assets/logo-montery-vinil.jpg" alt="Montery Vinil">
+                <span>MONTERY <strong>VINIL</strong></span>
+            </a>
+
+            <div class="sidebar-label">GERENCIAMENTO</div>
+
+            <a href="#painel" class="sidebar-link active" id="sidebarHome">
+                <span>▦</span> Painel administrativo
+            </a>
+
+            <a href="#colecao-admin" class="sidebar-link">
+                <span>♫</span> Discos cadastrados
+            </a>
+
+            <a href="#cadastro" class="sidebar-link" id="sidebarCadastro">
+                <span>＋</span> Cadastrar CD
+            </a>
+
+            <div class="sidebar-bottom">
+                <div class="sidebar-status">
+                    <span class="status-dot"></span>
+                    Sistema conectado ao Supabase
+                </div>
+
+                <a href="index.html" class="sidebar-link">
+                    <span>↗</span> Ver vitrine
+                </a>
+            </div>
+        </aside>
+
+        <!-- CONTEÚDO -->
+        <main class="admin-main">
+
+            <header class="topbar">
+                <div>
+                    <span class="eyebrow">MONTERY VINIL / ADMIN</span>
+                    <h1 id="pageTitle">Acesso administrativo</h1>
+                </div>
+
+                <a href="index.html" class="view-site">
+                    Ver site ↗
+                </a>
+            </header>
+
+            <!-- LOGIN -->
+            <section class="panel login-panel" id="loginCard">
+                <div class="panel-icon">♬</div>
+
+                <span class="section-label">ÁREA RESTRITA</span>
+                <h2>Bem-vindo de volta.</h2>
+
+                <p class="muted">
+                    Entre com sua conta autorizada para gerenciar
+                    a coleção Montery Vinil.
+                </p>
+
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginEmail">E-mail</label>
+                        <input
+                            type="email"
+                            id="loginEmail"
+                            autocomplete="username"
+                            placeholder="seuemail@exemplo.com"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="loginPassword">Senha</label>
+                        <input
+                            type="password"
+                            id="loginPassword"
+                            autocomplete="current-password"
+                            placeholder="Digite sua senha"
+                            required
+                        >
+                    </div>
+
+                    <p class="feedback" id="loginFeedback" role="status"></p>
+
+                    <button type="submit" class="btn-primary" id="btnLogin">
+                        Entrar no painel <span>→</span>
+                    </button>
+                </form>
+
+                <p class="login-note">
+                    O acesso utiliza a autenticação do Supabase.
+                </p>
+            </section>
+
+            <!-- PAINEL DE CADASTRO -->
+            <section class="dashboard hidden" id="adminCard">
+
+                <div class="welcome-card" id="painel">
+                    <div>
+                        <span class="section-label">CENTRAL DE CONTROLE</span>
+                        <h2>Gerencie sua coleção.</h2>
+                        <p>
+                            Cadastre novos discos e publique as capas
+                            diretamente na vitrine.
+                        </p>
+                    </div>
+
+                    <div class="welcome-icon">◉</div>
+                </div>
+
+                <section class="inventory-section" id="colecao-admin">
+                    <div class="content-heading inventory-heading">
+                        <div>
+                            <span class="section-label">CATÁLOGO PUBLICADO</span>
+                            <h2>Discos cadastrados</h2>
+                            <p class="muted">
+                                Edite as informações ou remova discos da vitrine.
+                            </p>
+                        </div>
+                    </div>
+
+                    <p class="feedback" id="inventoryFeedback" role="status"></p>
+                    <div class="inventory-list" id="inventoryList" aria-live="polite">
+                        <p class="muted">Carregando discos cadastrados...</p>
+                    </div>
+                </section>
+
+                <div class="content-heading" id="cadastro">
+                    <div>
+                        <span class="section-label">NOVO EXEMPLAR</span>
+                        <h2 id="formHeading">Cadastrar um CD</h2>
+                        <p class="muted" id="formDescription">
+                            Preencha os dados abaixo para publicar o disco.
+                        </p>
+                    </div>
+
+                    <span class="required-note">* Campos obrigatórios</span>
+                </div>
+
+                <form id="cdForm" class="panel form-panel">
+
+                    <div class="form-section-title">
+                        <span class="number">01</span>
+                        <div>
+                            <h3>Informações do disco</h3>
+                            <p>Identificação e classificação do exemplar.</p>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group full">
+                            <label for="title">Título do CD / disco *</label>
+                            <input
+                                type="text"
+                                id="title"
+                                maxlength="160"
+                                placeholder="Ex.: Banda Calypso — Volume 2"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group full">
+                            <label for="subtitle">Subtítulo</label>
+                            <input
+                                type="text"
+                                id="subtitle"
+                                maxlength="200"
+                                placeholder="Ex.: Ao vivo, edição especial..."
+                            >
+                        </div>
+                        <!-- parte para adicionar categorias na admin.html -->
+                        <div class="form-group">
+                            <label for="category">Categoria *</label>
+                            <select id="category" required>
+                                <option value="calypso">Calypso</option>
+                                <option value="brega">Brega Paraense</option>
+                                <option value="outros">Outros</option>
+                                <option value="lambada">Lambada</option>
+                                <option value="zouk">Zouk</option>
+                                <option value="ritmos-regionais">Ritmos Regionais</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="categoryLabel">Nome de exibição</label>
+                            <input
+                                type="text"
+                                id="categoryLabel"
+                                maxlength="80"
+                                placeholder="Ex.: Calypso ao vivo"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="form-divider"></div>
+
+                    <div class="form-section-title">
+                        <span class="number">02</span>
+                        <div>
+                            <h3>Capa do disco</h3>
+                            <p>Escolha uma imagem para a vitrine.</p>
+                        </div>
+                    </div>
+
+                    <div class="upload-area">
+                        <div class="cover-preview" id="coverPreview">
+                            <div class="cover-placeholder">
+                                <span>▧</span>
+                                <small>Prévia da capa</small>
+                            </div>
+
+                            <img
+                                id="previewImage"
+                                class="hidden"
+                                alt="Pré-visualização da capa selecionada"
+                            >
+                        </div>
+
+                        <div class="upload-controls">
+                            <label for="imageFile" class="upload-button">
+                                Escolher imagem
+                            </label>
+
+                            <input
+                                type="file"
+                                id="imageFile"
+                                accept="image/jpeg,image/png,image/webp"
+                                required
+                            >
+
+                            <p class="muted">
+                                Formatos aceitos: JPG, PNG e WebP.
+                                Recomendado: imagem quadrada.
+                            </p>
+
+                            <p class="muted hidden" id="imageEditHint">
+                                Ao editar, a capa atual será mantida se você não escolher outra imagem.
+                            </p>
+
+                            <p class="file-name" id="fileName">
+                                Nenhuma imagem selecionada.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="form-divider"></div>
+
+                    <div class="form-section-title">
+                        <span class="number">03</span>
+                        <div>
+                            <h3>Fotos adicionais</h3>
+                            <p>Adicione contracapa, encarte e outras imagens do disco.</p>
+                        </div>
+                    </div>
+
+                    <div class="gallery-editor">
+                        <div class="gallery-existing hidden" id="galleryExisting"></div>
+                        <div class="gallery-upload-list" id="galleryUploadList"></div>
+                        <button type="button" class="btn-secondary" id="addGalleryImage">
+                            Adicionar foto
+                        </button>
+                        <p class="muted gallery-hint">
+                            As fotos extras aparecem na janela de detalhes. Cada imagem pode ter até 5 MB.
+                        </p>
+                    </div>
+
+                    <div class="form-divider"></div>
+
+                    <div class="form-section-title">
+                        <span class="number">04</span>
+                        <div>
+                            <h3>Descrição do exemplar</h3>
+                            <p>Adicione informações relevantes para os visitantes.</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Descrição detalhada</label>
+                        <textarea
+                            id="description"
+                            rows="5"
+                            maxlength="5000"
+                            placeholder="Artista, ano, faixas, conservação, edição..."
+                        ></textarea>
+                    </div>
+
+                    <div class="form-footer">
+                        <p id="saveFeedback" class="feedback" role="status"></p>
+
+                        <button type="reset" class="btn-secondary" id="btnReset">
+                            Limpar formulário
+                        </button>
+
+                        <button type="button" class="btn-secondary hidden" id="btnCancelEdit">
+                            Cancelar edição
+                        </button>
+
+                        <button type="submit" class="btn-primary" id="btnSave">
+                            Publicar CD <span>↗</span>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="security-note">
+                    <span>◈</span>
+                    <p>
+                        Cadastro, edição e exclusão dependem das permissões configuradas
+                        na tabela <strong>cds</strong> e no Storage
+                        <strong>capas</strong> do Supabase.
+                    </p>
+                </div>
+
+                <button type="button" class="btn-logout" id="btnLogout">
+                    Sair da conta
+                </button>
+
+            </section>
+
+            <footer class="admin-footer">
+                © <span id="year"></span> Montery Vinil · Painel administrativo
+            </footer>
+
+        </main>
+    </div>
+
+</body>
+</html>

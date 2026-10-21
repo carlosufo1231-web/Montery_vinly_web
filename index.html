@@ -1,0 +1,312 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#080810">
+    <meta name="description" content="Montery Vinil — CDs, discos e clássicos da música paraense.">
+
+    <title>Montery Vinil | Coleção Musical</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Biblioteca oficial do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Seu JavaScript original -->
+    <script src="script.js" defer></script>
+</head>
+
+<body>
+
+    <!-- CABEÇALHO -->
+    <header class="header">
+        <a href="index.html" class="Minha_logo" aria-label="Montery Vinil - início">
+            <img src="assets/logo-montery-vinil.jpg" alt="Montery Vinil">
+        </a>
+
+        <a href="#inicio" class="meu_titulo">
+            <span class="titulo-principal">MONTERY</span>
+            <span class="titulo-secundario">VINIL <span>✦</span></span>
+        </a>
+
+        <button
+            class="menu-toggle"
+            id="menuToggle"
+            type="button"
+            aria-label="Abrir menu"
+            aria-expanded="false"
+            aria-controls="mainNav"
+        >
+            ☰
+        </button>
+
+        <nav class="main-nav" id="mainNav">
+            <a href="#inicio">Início</a>
+            <a href="#catalogo">Catálogo</a>
+            <a href="#sobre">Sobre</a>
+            <a href="admin.html" class="nav-admin">Área administrativa ↗</a>
+        </nav>
+    </header>
+
+    <main>
+
+        <!-- APRESENTAÇÃO -->
+        <section class="hero" id="inicio">
+            <div class="hero-background"></div>
+
+            <div class="hero-content">
+                <div class="eyebrow">
+                    <span class="status-dot"></span>
+                    A PAIXÃO PELA MÚSICA NUNCA ACABA
+                </div>
+
+                <h1>
+                    O som tem história.
+                    <span>A emoção tem nome.</span>
+                </h1>
+
+                <p>
+                    Explore uma coleção especial de CDs e clássicos
+                    da música paraense. Descubra artistas, reviva
+                    memórias e encontre seu próximo disco favorito.
+                </p>
+
+                <div class="hero-actions">
+                    <a href="#catalogo" class="btn-primary">
+                        Explorar coleção <span>↘</span>
+                    </a>
+
+                    <a href="#sobre" class="btn-outline">
+                        Conheça a Montery
+                    </a>
+                </div>
+
+                <div class="hero-signature">
+                    <span class="signature-line"></span>
+                    <span>CULTURA · MÚSICA · MEMÓRIA</span>
+                </div>
+            </div>
+
+            <div class="hero-art" aria-label="Identidade visual da Montery Vinil">
+                <div class="orbit orbit-one"></div>
+                <div class="orbit orbit-two"></div>
+                <div class="orbit orbit-three"></div>
+
+                <div class="hero-logo">
+                    <img src="assets/logo-montery-vinil.jpg" alt="Logo Montery Vinil">
+                </div>
+
+                <span class="floating-note note-one">♫</span>
+                <span class="floating-note note-two">♪</span>
+                <span class="floating-star">✦</span>
+
+                <div class="hero-sticker">
+                    <span>O SOM</span>
+                    <strong>É NOSSA</strong>
+                    <span>IDENTIDADE</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAIXA DECORATIVA -->
+        <div class="music-strip">
+            <span>♫ MÚSICA PARAENSE</span>
+            <span class="strip-star">✦</span>
+            <span>◉ COLECIONISMO</span>
+            <span class="strip-star">✦</span>
+            <span>♪ GRANDES CLÁSSICOS</span>
+            <span class="strip-star">✦</span>
+            <span>♫ MEMÓRIAS MUSICAIS</span>
+        </div>
+
+        <!-- CATÁLOGO -->
+        <section class="catalog-section" id="catalogo">
+
+            <div class="section-heading">
+                <div>
+                    <span class="section-label">NOSSA COLEÇÃO</span>
+                    <h2>Garimpe seu próximo <span>som.</span></h2>
+                </div>
+
+                <p>
+                    Cada disco tem uma história.
+                    Qual delas você vai levar para casa?
+                </p>
+            </div>
+
+            <!-- FILTROS: valores compatíveis com seu JavaScript -->
+            <div class="filter-area">
+                <div class="filter-heading">
+                    <span class="filter-icon">◉</span>
+                    <span>Explore por categoria</span>
+                </div>
+
+                <div class="filters">
+                    <button class="filter active" type="button" data-filter="todos">
+                        Todos os discos
+                    </button>
+
+                    <button class="filter" type="button" data-filter="calypso">
+                        ♫ Calypso
+                    </button>
+
+                    <button class="filter" type="button" data-filter="brega">
+                        ♫ Brega Paraense
+                    </button>
+
+                    <button class="filter" type="button" data-filter="Lambada">
+                        ♫ Lambada
+                    </button>
+
+                    <button class="filter" type="button" data-filter="Zouk">
+                        ♫ Zouk
+                    </button>
+
+                    <button class="filter" type="button" data-filter="Ritmos Regionais">
+                        ♫ Ritmos Regionais
+                    </button>
+                </div>
+            </div>
+
+            <!-- O SEU JS PREENCHE ESTA ÁREA AUTOMATICAMENTE -->
+            <div class="product-grid" id="productGrid">
+                <div class="loading-state">
+                    <span class="loading-disc"></span>
+                    <p>Preparando nossa coleção musical...</p>
+                </div>
+            </div>
+
+            <div class="catalog-footer">
+                <span class="footer-line"></span>
+                <p>O próximo clássico da sua coleção pode estar aqui.</p>
+                <span class="footer-line"></span>
+            </div>
+        </section>
+
+        <!-- SOBRE A MARCA -->
+        <section class="about-section" id="sobre">
+            <div class="about-visual">
+                <div class="about-ring">
+                    <img src="assets/logo-montery-vinil.jpg" alt="Identidade visual Montery Vinil">
+                </div>
+            </div>
+
+            <div class="about-content">
+                <span class="section-label">NOSSA IDENTIDADE</span>
+
+                <h2>
+                    Mais que discos.
+                    <span>Uma paixão pela música.</span>
+                </h2>
+
+                <p>
+                    A Montery Vinil nasceu da paixão pelos discos,
+                    pelos grandes artistas e pela riqueza da cultura
+                    musical paraense.
+                </p>
+
+                <p>
+                    Aqui, cada capa representa uma lembrança e cada
+                    coleção é uma oportunidade de redescobrir grandes
+                    momentos da música.
+                </p>
+
+                <a href="#catalogo" class="btn-primary">
+                    Descobrir a coleção ↗
+                </a>
+            </div>
+        </section>
+
+        <!-- CHAMADA FINAL -->
+        <section class="closing-banner">
+            <span class="closing-note">♫</span>
+
+            <div>
+                <span class="section-label">SUA PRÓXIMA DESCOBERTA</span>
+                <h2>Deixe a música <span>te encontrar.</span></h2>
+            </div>
+
+            <a href="#catalogo" class="btn-outline">
+                Ver catálogo ↑
+            </a>
+        </section>
+
+    </main>
+
+    <!-- MODAL DE DETALHES: IDs compatíveis com seu JS -->
+    <div class="modal-overlay" id="itemModal" aria-hidden="true">
+
+        <div class="modal-backdrop" data-close="true"></div>
+
+        <div
+            class="modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modalTitle"
+        >
+            <button
+                class="modal-close"
+                id="modalClose"
+                type="button"
+                aria-label="Fechar detalhes"
+            >
+                &times;
+            </button>
+
+            <div class="modal-gallery">
+                <div class="modal-image-container">
+                    <img id="modalImage" src="" alt="">
+                    <span class="modal-image-label" id="modalImageLabel"></span>
+                </div>
+                <div
+                    class="modal-gallery-thumbnails"
+                    id="modalGalleryThumbnails"
+                    aria-label="Fotos do disco"
+                ></div>
+            </div>
+
+            <div class="modal-content">
+                <span class="section-label">DETALHES DO EXEMPLAR</span>
+
+                <h2 id="modalTitle">Título do disco</h2>
+
+                <p id="modalDescription">
+                    Informações sobre este exemplar.
+                </p>
+
+                <div class="modal-status">
+                    <span class="status-dot"></span>
+                    <span id="modalStatus">Consulte disponibilidade e valor</span>
+                </div>
+
+                <a
+                    id="modalContact"
+                    class="btn-primary contact-button"
+                    href="#"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    Consultar pelo WhatsApp ↗
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- RODAPÉ -->
+    <footer class="site-footer">
+        <a href="#inicio" class="footer-brand">
+            MONTERY <span>VINIL</span>
+        </a>
+
+        <p>O som que conecta histórias e gerações.</p>
+
+        <div class="footer-bottom">
+            <span>© <span id="year"></span> Montery Vinil</span>
+            <a href="#inicio">Voltar ao topo ↑</a>
+        </div>
+    </footer>
+
+</body>
+</html>
