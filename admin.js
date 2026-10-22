@@ -55,6 +55,8 @@ let editingCd = null;
 let inventoryCds = [];
 let galleryImages = [];
 let removedGalleryImages = [];
+let adminRealtimeChannel = null;
+let inventoryRefreshTimer = null;
 
 // Limite de upload: 5 MB.
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -146,7 +148,9 @@ async function checkUser() {
 
         if (session) {
             await loadCds();
+            subscribeToAdminChanges();
         } else if (inventoryList) {
+            stopAdminChanges();
             inventoryList.replaceChildren();
             const message = document.createElement("p");
             message.className = "muted";
@@ -253,6 +257,49 @@ async function loadCds() {
             "error"
         );
     }
+}
+
+function subscribeToAdminChanges() {
+    if (!supabaseClient || adminRealtimeChannel) return;
+
+    adminRealtimeChannel = supabaseClient
+        .channel("admin-cds-inventory")
+        .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "cds" },
+            () => {
+                window.clearTimeout(inventoryRefreshTimer);
+                inventoryRefreshTimer = window.setTimeout(loadCds, 150);
+            }
+        )
+        .subscribe((status, error) => {
+            if (
+                status === "CHANNEL_ERROR" ||
+                status === "TIMED_OUT" ||
+                status === "CLOSED"
+            ) {
+                console.error(
+                    "Não foi possível receber atualizações em tempo real do painel:",
+                    error || status
+                );
+            }
+        });
+}
+
+function stopAdminChanges() {
+    if (!adminRealtimeChannel || !supabaseClient) return;
+
+    const channel = adminRealtimeChannel;
+    adminRealtimeChannel = null;
+    window.clearTimeout(inventoryRefreshTimer);
+
+    supabaseClient.removeChannel(channel).then((status) => {
+        if (status !== "ok") {
+            console.error("Não foi possível encerrar o canal Realtime do painel:", status);
+        }
+    }).catch((error) => {
+        console.error("Erro ao encerrar o canal Realtime do painel:", error);
+    });
 }
 
 function setFormMode(cd = null) {
@@ -575,6 +622,15 @@ if (supabaseClient && supabaseClient.auth) {
         pageTitle.textContent = session
             ? "Gerenciamento da coleção"
             : "Acesso administrativo";
+
+        if (session) {
+            if (event !== "INITIAL_SESSION") {
+                loadCds();
+            }
+            subscribeToAdminChanges();
+        } else {
+            stopAdminChanges();
+        }
     });
 }
 

@@ -21,6 +21,8 @@ const fallbackCds = [
 
 // Variável global para guardar todos os CDs obtidos da base de dados
 let allCds = [];
+let catalogRealtimeChannel = null;
+let catalogRefreshTimer = null;
 
 // --- ELEMENTOS DO DOM ---
 const productGrid = document.getElementById('productGrid');
@@ -74,10 +76,37 @@ async function fetchCds() {
         allCds = data && data.length > 0 ? data : fallbackCds;
         renderCds(allCds);
     } catch (err) {
-        console.error('Erro ao carregar CDs:', err.message);
+        console.error('Erro ao carregar CDs:', err);
         allCds = fallbackCds;
         renderCds(allCds);
     }
+}
+
+function subscribeToCatalogChanges() {
+    if (!supabaseClient || catalogRealtimeChannel) return;
+
+    catalogRealtimeChannel = supabaseClient
+        .channel('public-cds-catalog')
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'cds' },
+            () => {
+                window.clearTimeout(catalogRefreshTimer);
+                catalogRefreshTimer = window.setTimeout(fetchCds, 150);
+            }
+        )
+        .subscribe((status, error) => {
+            if (
+                status === 'CHANNEL_ERROR' ||
+                status === 'TIMED_OUT' ||
+                status === 'CLOSED'
+            ) {
+                console.error(
+                    'Não foi possível receber atualizações em tempo real do catálogo:',
+                    error || status
+                );
+            }
+        });
 }
 
 // --- RENDERIZAR OS CARDS NA GRELHA ---
@@ -222,5 +251,6 @@ window.addEventListener('keydown', (e) => {
 
 // --- INICIALIZAR AO CARREGAR A PÁGINA ---
 document.addEventListener('DOMContentLoaded', () => {
+    subscribeToCatalogChanges();
     fetchCds();
 });
