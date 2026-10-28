@@ -139,6 +139,28 @@
                         </div>
                     </div>
 
+                    <form id="genreForm" class="genre-manager panel">
+                        <div>
+                            <span class="section-label">GERENCIAR GÊNEROS</span>
+                            <h3>Adicionar gênero</h3>
+                            <p class="muted">O novo gênero ficará disponível no cadastro e nos filtros da vitrine.</p>
+                        </div>
+                        <div class="genre-manager-fields">
+                            <label class="sr-only" for="newGenreName">Nome do gênero</label>
+                            <input
+                                type="text"
+                                id="newGenreName"
+                                maxlength="80"
+                                placeholder="Ex.: Carimbó"
+                                required
+                            >
+                            <button type="submit" class="btn-primary" id="btnAddGenre">
+                                Adicionar gênero
+                            </button>
+                        </div>
+                        <p class="feedback" id="genreFeedback" role="status"></p>
+                    </form>
+
                     <p class="feedback" id="inventoryFeedback" role="status"></p>
                     <div class="inventory-list" id="inventoryList" aria-live="polite">
                         <p class="muted">Carregando discos cadastrados...</p>
@@ -188,27 +210,12 @@
                                 placeholder="Ex.: Nome do artista, ano, edição especial..."
                             >
                         </div>
-                        <!-- parte para adicionar categorias na admin.html -->
                         <div class="form-group">
-                            <label for="category">Categoria *</label>
-                            <select id="category" required>
-                                <option value="calypso">Calypso</option>
-                                <option value="brega">Brega Paraense</option>
-                                <option value="outros">Outros</option>
-                                <option value="lambada">Lambada</option>
-                                <option value="zouk">Zouk</option>
-                                <option value="ritmos-regionais">Ritmos Regionais</option>
+                            <label for="category">Gênero *</label>
+                            <select id="category" required disabled>
+                                <option value="">Carregando gêneros...</option>
                             </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="categoryLabel">Nome de exibição</label>
-                            <input
-                                type="text"
-                                id="categoryLabel"
-                                maxlength="80"
-                                placeholder="Ex.: Calypso ao vivo"
-                            >
+                            <p class="feedback" id="genreLoadFeedback" role="status"></p>
                         </div>
                     </div>
 

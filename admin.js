@@ -31,6 +31,12 @@ const loginFeedback = document.getElementById("loginFeedback");
 const saveFeedback = document.getElementById("saveFeedback");
 const inventoryFeedback = document.getElementById("inventoryFeedback");
 const inventoryList = document.getElementById("inventoryList");
+const genreForm = document.getElementById("genreForm");
+const genreFeedback = document.getElementById("genreFeedback");
+const genreLoadFeedback = document.getElementById("genreLoadFeedback");
+const newGenreName = document.getElementById("newGenreName");
+const btnAddGenre = document.getElementById("btnAddGenre");
+const categorySelect = document.getElementById("category");
 
 const btnLogin = document.getElementById("btnLogin");
 const btnSave = document.getElementById("btnSave");
@@ -57,6 +63,7 @@ let galleryImages = [];
 let removedGalleryImages = [];
 let adminRealtimeChannel = null;
 let inventoryRefreshTimer = null;
+let genres = [];
 
 // Limite de upload: 5 MB.
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -66,6 +73,130 @@ const ALLOWED_TYPES = [
     "image/png",
     "image/webp"
 ];
+
+function normalizeCategory(value) {
+    return String(value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim()
+        .replace(/\s+/g, " ");
+}
+
+const categoryAliases = {
+    "ritmos regionais": "ritmos-regionais",
+    "ritmos paraenses": "ritmos-regionais",
+    "ritmo paraense": "ritmos-regionais",
+    "brega paraense": "brega"
+};
+
+function getCanonicalCategory(value) {
+    const normalized = normalizeCategory(value);
+    return categoryAliases[normalized] || normalized.replace(/ /g, "-");
+}
+
+function findGenreForCd(cd) {
+    if (cd.Genero_id !== null && cd.Genero_id !== undefined) {
+        const byId = genres.find((genre) => String(genre.id) === String(cd.Genero_id));
+        if (byId) return byId;
+    }
+
+    const legacyCategory = getCanonicalCategory(cd.category || cd.category_label);
+    return genres.find((genre) =>
+        getCanonicalCategory(genre.nome) === legacyCategory
+    ) || null;
+}
+
+function renderGenreOptions(selectedId = categorySelect.value) {
+    categorySelect.replaceChildren();
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = genres.length
+        ? "Selecione um gênero"
+        : "Cadastre um gênero primeiro";
+    categorySelect.append(placeholder);
+
+    genres.forEach((genre) => {
+        const option = document.createElement("option");
+        option.value = String(genre.id);
+        option.textContent = genre.nome;
+        categorySelect.append(option);
+    });
+
+    categorySelect.disabled = genres.length === 0;
+    categorySelect.value = genres.some((genre) => String(genre.id) === String(selectedId))
+        ? String(selectedId)
+        : "";
+}
+
+async function loadGenres() {
+    if (!supabaseClient) return;
+
+    try {
+        const { data, error } = await supabaseClient
+            .from("Generos")
+            .select("id, nome")
+            .order("nome", { ascending: true });
+
+        if (error) throw error;
+
+        const selectedId = categorySelect.value;
+        genres = data || [];
+        renderGenreOptions(selectedId);
+        showFeedback(genreLoadFeedback, "");
+    } catch (error) {
+        console.error("Erro ao carregar gêneros:", error);
+        categorySelect.replaceChildren();
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "Não foi possível carregar os gêneros";
+        categorySelect.append(option);
+        categorySelect.disabled = true;
+        showFeedback(genreLoadFeedback, friendlyError(error), "error");
+    }
+}
+
+async function createGenre(event) {
+    event.preventDefault();
+
+    const name = newGenreName.value.trim();
+    if (!name) return;
+
+    if (genres.some((genre) =>
+        normalizeCategory(genre.nome) === normalizeCategory(name)
+    )) {
+        showFeedback(genreFeedback, "Esse gênero já está cadastrado.", "error");
+        return;
+    }
+
+    btnAddGenre.disabled = true;
+    btnAddGenre.textContent = "Adicionando...";
+    showFeedback(genreFeedback, "");
+
+    try {
+        const { error } = await supabaseClient
+            .from("Generos")
+            .insert({ nome: name });
+
+        if (error) throw error;
+
+        await loadGenres();
+        const createdGenre = genres.find((genre) =>
+            normalizeCategory(genre.nome) === normalizeCategory(name)
+        );
+        if (createdGenre) categorySelect.value = String(createdGenre.id);
+
+        newGenreName.value = "";
+        showFeedback(genreFeedback, "Gênero adicionado e disponível para cadastro.", "success");
+    } catch (error) {
+        showFeedback(genreFeedback, friendlyError(error), "error");
+    } finally {
+        btnAddGenre.disabled = false;
+        btnAddGenre.textContent = "Adicionar gênero";
+    }
+}
 
 // ==========================================
 // MENSAGENS
@@ -147,6 +278,7 @@ async function checkUser() {
             : "Acesso administrativo";
 
         if (session) {
+            await loadGenres();
             await loadCds();
             subscribeToAdminChanges();
         } else if (inventoryList) {
@@ -200,9 +332,10 @@ function renderInventory(cds) {
         title.textContent = cd.title;
 
         const metadata = document.createElement("p");
+        const genre = findGenreForCd(cd);
         metadata.textContent = [
             cd.subtitle,
-            cd.category_label || cd.category
+            genre?.nome || cd.category_label || cd.category || "Gênero não definido"
         ].filter(Boolean).join(" · ");
 
         const actions = document.createElement("div");
@@ -244,7 +377,7 @@ async function loadCds() {
     try {
         const { data, error } = await supabaseClient
             .from("cds")
-            .select("id, title, subtitle, category, category_label, image_url, description, gallery_images")
+            .select("id, title, subtitle, category, category_label, image_url, description, gallery_images, Genero_id")
             .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -270,6 +403,17 @@ function subscribeToAdminChanges() {
             () => {
                 window.clearTimeout(inventoryRefreshTimer);
                 inventoryRefreshTimer = window.setTimeout(loadCds, 150);
+            }
+        )
+        .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "Generos" },
+            () => {
+                window.clearTimeout(inventoryRefreshTimer);
+                inventoryRefreshTimer = window.setTimeout(() => {
+                    loadGenres();
+                    loadCds();
+                }, 150);
             }
         )
         .subscribe((status, error) => {
@@ -301,6 +445,8 @@ function stopAdminChanges() {
         console.error("Erro ao encerrar o canal Realtime do painel:", error);
     });
 }
+
+genreForm.addEventListener("submit", createGenre);
 
 function setFormMode(cd = null) {
     editingCd = cd;
@@ -395,8 +541,8 @@ function addGalleryUploadRow() {
 function beginEditing(cd) {
     document.getElementById("title").value = cd.title || "";
     document.getElementById("subtitle").value = cd.subtitle || "";
-    document.getElementById("category").value = cd.category || "outros";
-    document.getElementById("categoryLabel").value = cd.category_label || "";
+    const genre = findGenreForCd(cd);
+    categorySelect.value = genre ? String(genre.id) : "";
     document.getElementById("description").value = cd.description || "";
 
     imageFile.value = "";
@@ -419,6 +565,13 @@ function beginEditing(cd) {
 
     setFormMode(cd);
     showFeedback(saveFeedback, "");
+    if (!genre) {
+        showFeedback(
+            saveFeedback,
+            "Este disco ainda não está associado a um gênero. Selecione um gênero antes de salvar.",
+            "error"
+        );
+    }
     document.getElementById("cadastro").scrollIntoView({
         behavior: "smooth",
         block: "start"
@@ -761,9 +914,10 @@ cdForm.addEventListener("submit", async (event) => {
 
     const title = document.getElementById("title").value.trim();
     const subtitle = document.getElementById("subtitle").value.trim();
-    const category = document.getElementById("category").value;
-    const categoryLabelInput =
-        document.getElementById("categoryLabel").value.trim();
+    const genreId = categorySelect.value;
+    const selectedGenre = genres.find(
+        (genre) => String(genre.id) === String(genreId)
+    );
     const description =
         document.getElementById("description").value.trim();
 
@@ -781,6 +935,11 @@ cdForm.addEventListener("submit", async (event) => {
 
     if (!title) {
         showFeedback(saveFeedback, "Informe o título do disco.", "error");
+        return;
+    }
+
+    if (!selectedGenre) {
+        showFeedback(saveFeedback, "Selecione um gênero cadastrado.", "error");
         return;
     }
 
@@ -895,20 +1054,12 @@ cdForm.addEventListener("submit", async (event) => {
             });
         }
 
-        const categoryLabels = {
-            calypso: "Calypso",
-            brega: "Brega Paraense",
-            outros: "Outros"
-        };
-
-        const categoryLabel =
-            categoryLabelInput || categoryLabels[category] || category;
-
         const cdData = {
             title,
             subtitle: subtitle || null,
-            category,
-            category_label: categoryLabel,
+            "Genero_id": selectedGenre.id,
+            category: getCanonicalCategory(selectedGenre.nome),
+            category_label: selectedGenre.nome,
             image_url: imageUrl,
             description: description || null,
             gallery_images: [

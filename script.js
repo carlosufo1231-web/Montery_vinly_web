@@ -21,12 +21,14 @@ const fallbackCds = [
 
 // Variável global para guardar todos os CDs obtidos da base de dados
 let allCds = [];
+let allGenres = [];
 let catalogRealtimeChannel = null;
 let catalogRefreshTimer = null;
+let activeFilterId = 'todos';
 
 // --- ELEMENTOS DO DOM ---
 const productGrid = document.getElementById('productGrid');
-const filterButtons = document.querySelectorAll('.filter');
+const filtersContainer = document.getElementById('catalogFilters');
 const itemModal = document.getElementById('itemModal');
 const modalClose = document.getElementById('modalClose');
 const modalImage = document.getElementById('modalImage');
@@ -61,23 +63,40 @@ async function fetchCds() {
 
     if (!supabaseClient) {
         allCds = fallbackCds;
+        allGenres = [];
+        renderFilters();
         renderCds(allCds);
         return;
     }
 
     try {
-        const { data, error } = await supabaseClient
-            .from('cds')
-            .select('*')
-            .order('created_at', { ascending: false });
+        const [cdsResult, genresResult] = await Promise.all([
+            supabaseClient
+                .from('cds')
+                .select('*')
+                .order('created_at', { ascending: false }),
+            supabaseClient
+                .from('Generos')
+                .select('id, nome')
+                .order('nome', { ascending: true })
+        ]);
 
-        if (error) throw error;
+        if (cdsResult.error) throw cdsResult.error;
+        if (genresResult.error) {
+            console.error('Erro ao carregar gêneros:', genresResult.error);
+        }
 
-        allCds = data && data.length > 0 ? data : fallbackCds;
+        allCds = cdsResult.data && cdsResult.data.length > 0
+            ? cdsResult.data
+            : fallbackCds;
+        allGenres = genresResult.error ? [] : genresResult.data || [];
+        renderFilters();
         renderCds(allCds);
     } catch (err) {
-        console.error('Erro ao carregar CDs:', err);
+        console.error('Erro ao carregar catálogo e gêneros:', err);
         allCds = fallbackCds;
+        allGenres = [];
+        renderFilters();
         renderCds(allCds);
     }
 }
@@ -90,6 +109,14 @@ function subscribeToCatalogChanges() {
         .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'cds' },
+            () => {
+                window.clearTimeout(catalogRefreshTimer);
+                catalogRefreshTimer = window.setTimeout(fetchCds, 150);
+            }
+        )
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'Generos' },
             () => {
                 window.clearTimeout(catalogRefreshTimer);
                 catalogRefreshTimer = window.setTimeout(fetchCds, 150);
@@ -118,13 +145,22 @@ function renderCds(cds) {
         return;
     }
 
-    productGrid.innerHTML = cds.map(cd => `
+    const visibleCds = activeFilterId === 'todos'
+        ? cds
+        : cds.filter(cd => getCdGenreId(cd) === activeFilterId);
+
+    if (visibleCds.length === 0) {
+        productGrid.innerHTML = `<div class="empty-state">Nenhum disco encontrado nesta categoria.</div>`;
+        return;
+    }
+
+    productGrid.innerHTML = visibleCds.map(cd => `
         <div class="product-card" data-category="${cd.category}">
             <div class="product-image">
                 <img src="${cd.image_url}" alt="${cd.title}" loading="lazy">
             </div>
             <div class="product-info">
-                <span class="product-category">${cd.category_label || cd.category}</span>
+                <span class="product-category">${getCdGenreName(cd)}</span>
                 <h3>${cd.title}</h3>
                 <p>${cd.subtitle || ''}</p>
                 <button class="details-button" onclick="openModal('${cd.id}')">
@@ -135,23 +171,94 @@ function renderCds(cds) {
     `).join('');
 }
 
-// --- SISTEMA DE FILTROS ---
-filterButtons.forEach(button => {
-    button.addEventListener('click', () => {
-        // Remover classe ativa de todos
-        filterButtons.forEach(btn => btn.classList.remove('active'));
-        // Adicionar ao botão clicado
-        button.classList.add('active');
+function normalizeCategory(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim()
+        .replace(/\s+/g, ' ');
+}
 
-        const filterValue = button.getAttribute('data-filter');
+const categoryAliases = {
+    'ritmos regionais': 'ritmos-regionais',
+    'ritmos paraenses': 'ritmos-regionais',
+    'ritmo paraense': 'ritmos-regionais',
+    'brega paraense': 'brega'
+};
 
-        if (filterValue === 'todos') {
-            renderCds(allCds);
-        } else {
-            const filtered = allCds.filter(cd => cd.category === filterValue);
-            renderCds(filtered);
-        }
+function getCanonicalCategory(value) {
+    const normalized = normalizeCategory(value);
+    return categoryAliases[normalized] || normalized.replace(/ /g, '-');
+}
+
+function getGenreForCd(cd) {
+    if (cd.Genero_id !== null && cd.Genero_id !== undefined) {
+        const genreById = allGenres.find(
+            genre => String(genre.id) === String(cd.Genero_id)
+        );
+        if (genreById) return genreById;
+    }
+
+    const legacyCategory = getCanonicalCategory(cd.category || cd.category_label);
+    return allGenres.find(
+        genre => getCanonicalCategory(genre.nome) === legacyCategory
+    ) || null;
+}
+
+function getCdGenreId(cd) {
+    const genre = getGenreForCd(cd);
+    return genre ? String(genre.id) : '';
+}
+
+function getCdGenreName(cd) {
+    const genre = getGenreForCd(cd);
+    return genre?.nome || cd.category_label || cd.category || 'Gênero não definido';
+}
+
+function renderFilters() {
+    if (!filtersContainer) return;
+
+    filtersContainer.replaceChildren();
+
+    const allButton = document.createElement('button');
+    allButton.className = 'filter';
+    allButton.type = 'button';
+    allButton.dataset.filter = 'todos';
+    allButton.textContent = 'Todos os discos';
+    allButton.classList.toggle('active', activeFilterId === 'todos');
+    filtersContainer.append(allButton);
+
+    allGenres.forEach(genre => {
+        const button = document.createElement('button');
+        button.className = 'filter';
+        button.type = 'button';
+        button.dataset.filter = String(genre.id);
+        button.textContent = `♫ ${genre.nome}`;
+        button.classList.toggle('active', activeFilterId === String(genre.id));
+        filtersContainer.append(button);
     });
+
+    if (
+        activeFilterId !== 'todos' &&
+        !allGenres.some(genre => String(genre.id) === activeFilterId)
+    ) {
+        activeFilterId = 'todos';
+        allButton.classList.add('active');
+    }
+}
+
+// --- SISTEMA DE FILTROS ---
+filtersContainer.addEventListener('click', event => {
+    const button = event.target.closest('.filter[data-filter]');
+    if (!button) return;
+
+    activeFilterId = button.dataset.filter;
+    filtersContainer
+        .querySelectorAll('.filter')
+        .forEach(filter => filter.classList.toggle('active', filter === button));
+    renderCds(allCds);
 });
 
 // --- ABRIR MODAL DE DETALHES ---
